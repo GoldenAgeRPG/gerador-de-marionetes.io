@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Puppet Maker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@400;600&family=Rajdhani:wght@600&display=swap" rel="stylesheet">
+   
+  <style>
+    /* --- UI GERENCIADOR (BLUEPRINT DARK) --- */
+    :root { --bg: #0b1021; --panel: #131b2e; --text: #d6e4ff; --accent: #40a9ff; --warn: #ffd700; --danger: #ff4d4f; }
+    body { font-family: 'Share Tech Mono', monospace; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: grid; grid-template-columns: 400px 1fr; overflow: hidden; }
+     
+    .editor { background: var(--panel); border-right: 2px solid var(--accent); padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; box-shadow: 5px 0 20px #000; z-index: 10; }
+    h1 { margin: 0; color: var(--accent); font-family: 'Teko'; font-size: 2em; text-align: center; border-bottom: 1px solid var(--accent); padding-bottom: 10px; }
+     
+    label { display: block; font-size: 0.8em; margin-bottom: 5px; color: #888; text-transform: uppercase; }
+    input, select, textarea { width: 100%; background: #050810; border: 1px solid #333; color: #fff; padding: 8px; font-family: inherit; margin-bottom: 10px; }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+     
+    .row { display: flex; gap: 10px; }
+     
+    .mod-list-edit { display: flex; flex-direction: column; gap: 5px; border: 1px solid #333; padding: 10px; background: #080a12; flex: 1; min-height: 150px; overflow-y: auto; }
+    .mod-item-edit { 
+        display: flex; justify-content: space-between; align-items: center; 
+        background: rgba(64, 169, 255, 0.1); padding: 5px 10px; border-left: 3px solid var(--accent);
+    }
+    .mod-name { font-size: 0.9em; color: #fff; }
+    .mod-cost { font-size: 0.8em; color: var(--warn); margin-right: 10px; }
+    .btn-del { background: transparent; color: var(--danger); border: 1px solid var(--danger); cursor: pointer; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    .btn-del:hover { background: var(--danger); color: #fff; }
+     
+    .btn { width: 100%; padding: 10px; background: var(--accent); color: #000; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase; margin-top: 5px; }
+    .btn:hover { filter: brightness(1.2); }
+     
+    .slot-counter { font-weight: bold; transition: 0.3s; }
+    .slot-over { color: var(--danger); animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: 0.5; } }
+
+    .preview { background: #050810; display: flex; flex-direction: column; align-items: center; padding: 40px; overflow-y: auto; }
+    #preview-box { width: 100%; max-width: 600px; }
+    #output-code { height: 80px; width: 100%; max-width: 600px; margin-top: 20px; opacity: 0; }
+
+    /* CSS Injetado */
+    @import url('https://gaaaaaaaaabs.github.io/goldenagerepositor.io/ficha-marionete.css');
+     
+    /* Classe auxiliar para esconder EA */
+    .hidden { display: none !important; }
+  </style>
+  <link href="https://gaaaaaaaaabs.github.io/goldenagerepositor.io/ficha-marionete.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+
+  <div class="editor">
+    <h1>PUPPET MAKER</h1>
+     
+    <div>
+      <label>Modelo / Nome</label>
+      <input type="text" id="inp-model" placeholder="Ex: MK-II Sentinel" oninput="upd()">
+    </div>
+     
+    <div class="row">
+      <div style="flex:1">
+        <label>Grau (Base HP / Slots)</label>
+        <select id="inp-grade" onchange="recalcStats()">
+            <option value="GRAU 4" data-base="2" data-hp="500">Grau 4 (500 HP)</option>
+            <option value="GRAU 3" data-base="4" data-hp="1500" selected>Grau 3 (1.500 HP)</option>
+            <option value="GRAU 2" data-base="6" data-hp="3000">Grau 2 (3.000 HP)</option>
+            <option value="GRAU 1" data-base="8" data-hp="6000">Grau 1 (6.000 HP)</option>
+            <option value="ESPECIAL" data-base="12" data-hp="15000">Especial (15.000 HP)</option>
+        </select>
+      </div>
+      <div style="flex:1">
+        <label>Chassi (Modificador)</label>
+        <select id="inp-size" onchange="recalcStats()">
+            <option value="TIPO-S" data-mod="-2" data-hp-mod="0.5">TIPO-S (x0.5 HP)</option>
+            <option value="TIPO-M" data-mod="0" data-hp-mod="1.0" selected>TIPO-M (x1.0 HP)</option>
+            <option value="TIPO-L" data-mod="2" data-hp-mod="1.5">TIPO-L (x1.5 HP)</option>
+            <option value="TIPO-XL" data-mod="5" data-hp-mod="3.0">TIPO-XL (x3.0 HP)</option>
+        </select>
+      </div>
+    </div>
+     
+    <div style="display:flex; justify-content:space-between; font-size:0.8em; color:#aaa; margin-top:-5px; margin-bottom:10px; background:#080a12; padding:5px; border:1px solid #333;">
+        <div>Slots Máx: <span id="calc-slots" style="color:var(--accent); font-weight:bold;">4</span></div>
+        <div>HP Total: <span id="calc-hp" style="color:var(--warn); font-weight:bold;">1500</span></div>
+        <div>EA Total: <span id="calc-ea" style="color:var(--text); font-weight:bold;">0</span></div>
+    </div>
+
+    <div>
+      <label>Imagem (URL)</label>
+      <input type="text" id="inp-img" oninput="upd()">
+    </div>
+
+    <hr style="border:0; border-top:1px dashed #333; width:100%;">
+
+    <div>
+      <label>Adicionar Módulo</label>
+      <div class="row">
+         <select id="module-select">
+             <optgroup label="OFENSIVO">
+                 <option value="Lâminas Integradas|1">Lâminas Integradas (1 Slot)</option>
+                 <option value="Artilharia|2">Artilharia (2 Slots)</option>
+                 <option value="Injetor Químico|1">Injetor Químico (1 Slot)</option>
+                 <option value="Canhão de Energia|3">Canhão de Energia (3 Slots)</option>
+             </optgroup>
+             <optgroup label="DEFENSIVO">
+                 <option value="Blindagem em Camadas|2">Blindagem em Camadas (2 Slots)</option>
+                 <option value="Reforço Estrutural|1">Reforço Estrutural (1 Slot / +500 HP)</option>
+                 <option value="Escudo de Energia|3">Escudo de Energia (3 Slots)</option>
+                 <option value="Auto-Reparo|2">Auto-Reparo (2 Slots)</option>
+             </optgroup>
+             <optgroup label="MOBILIDADE">
+                 <option value="Propulsores|1">Propulsores (1 Slot)</option>
+                 <option value="Unidade de Voo|4">Unidade de Voo (4 Slots)</option>
+             </optgroup>
+             <optgroup label="AUXILIAR">
+                 <option value="Sensores Ópticos|1">Sensores Ópticos (1 Slot)</option>
+                 <option value="Bateria|2">Bateria (2 Slots / +1.000 EA)</option>
+             </optgroup>
+         </select>
+         <button class="btn" style="width:auto; margin-top:0;" onclick="addMod()">+</button>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; flex:1;">
+      <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 5px;">
+          <label style="margin:0;">Módulos Instalados</label>
+          <span id="slot-display" class="slot-counter" style="font-size:0.9em; color:#fff;">0 / 4 Slots</span>
+      </div>
+      <div class="mod-list-edit" id="mod-list"></div>
+    </div>
+
+    <div style="margin-top:auto;">
+        <button class="btn" onclick="copyCode()">COPIAR CÓDIGO</button>
+    </div>
+  </div>
+
+  <div class="preview">
+    <div id="preview-box"></div>
+    <textarea id="output-code"></textarea>
+  </div>
+
+<script>
+  let state = {
+    model: "MK-II SENTINEL",
+    size: "TIPO-M",
+    grade: "GRAU 3",
+    img: "https://i.pinimg.com/originals/0f/27/47/0f274787473774288274397789228822.jpg",
+    hpMax: 1500,
+    eaMax: 0,
+    slotsMax: 4, 
+    modules: [] 
+  };
+
+  function recalcStats() {
+    // 1. SLOTS & GRAU
+    const gradeSel = document.getElementById('inp-grade');
+    const baseSlots = parseInt(gradeSel.options[gradeSel.selectedIndex].getAttribute('data-base'));
+    const baseHpGrade = parseInt(gradeSel.options[gradeSel.selectedIndex].getAttribute('data-hp'));
+     
+    const sizeSel = document.getElementById('inp-size');
+    const modSlots = parseInt(sizeSel.options[sizeSel.selectedIndex].getAttribute('data-mod'));
+    const modHp = parseFloat(sizeSel.options[sizeSel.selectedIndex].getAttribute('data-hp-mod'));
+     
+    // 2. Calcula Slots
+    let totalSlots = baseSlots + modSlots;
+    if (totalSlots < 1) totalSlots = 1;
+     
+    state.grade = gradeSel.value;
+    state.size = sizeSel.value;
+    state.slotsMax = totalSlots;
+     
+    // 3. Calcula HP (Base * Modificador + Bônus de Módulos)
+    // Verifica quantos Reforços Estruturais tem
+    let structureBonus = 0;
+    let batteryCount = 0;
+     
+    state.modules.forEach(m => {
+        if(m.name === "Reforço Estrutural") structureBonus += (500 * m.count);
+        if(m.name === "Bateria") batteryCount += m.count;
+    });
+
+    // HP Final
+    state.hpMax = (baseHpGrade * modHp) + structureBonus;
+     
+    // EA Final (MODIFICADO PARA 1000)
+    state.eaMax = batteryCount * 1000;
+     
+    // Atualiza UI
+    document.getElementById('calc-slots').innerText = state.slotsMax;
+    document.getElementById('calc-hp').innerText = state.hpMax;
+    document.getElementById('calc-ea').innerText = state.eaMax;
+     
+    upd();
+  }
+
+  function upd() {
+    state.model = document.getElementById('inp-model').value;
+    state.img = document.getElementById('inp-img').value;
+     
+    renderModList();
+    renderPreview();
+  }
+
+  function addMod() {
+    const val = document.getElementById('module-select').value;
+    const [name, costStr] = val.split('|');
+    const cost = parseInt(costStr);
+
+    const existing = state.modules.find(m => m.name === name);
+     
+    if(existing) {
+        existing.count++;
+    } else {
+        state.modules.push({ name, cost, count: 1 });
+    }
+    recalcStats(); // Recalcula HP/EA se necessário
+  }
+
+  function removeMod(index) {
+    const mod = state.modules[index];
+    if(mod.count > 1) {
+        mod.count--;
+    } else {
+        state.modules.splice(index, 1);
+    }
+    recalcStats();
+  }
+
+  function renderModList() {
+    const container = document.getElementById('mod-list');
+    const slotDisplay = document.getElementById('slot-display');
+    container.innerHTML = '';
+     
+    let usedSlots = 0;
+
+    state.modules.forEach((m, i) => {
+        const totalCost = m.cost * m.count;
+        usedSlots += totalCost;
+        const nameDisplay = m.count > 1 ? `${m.name} x${m.count}` : m.name;
+
+        container.innerHTML += `
+            <div class="mod-item-edit">
+                <div><span class="mod-name">${nameDisplay}</span></div>
+                <div style="display:flex; align-items:center;">
+                    <span class="mod-cost">${totalCost} Slots</span>
+                    <button class="btn-del" onclick="removeMod(${i})">-</button>
+                </div>
+            </div>
+        `;
+    });
+
+    slotDisplay.innerText = `${usedSlots} / ${state.slotsMax} Slots`;
+    if (usedSlots > state.slotsMax) {
+        slotDisplay.classList.add('slot-over');
+    } else {
+        slotDisplay.classList.remove('slot-over');
+    }
+  }
+
+  function renderPreview() {
+    let modsHTML = '';
+     
+    if(state.modules.length === 0) {
+        modsHTML = `<li class="mod-item" style="font-style:italic; color:#555;">Nenhum módulo instalado.</li>`;
+    } else {
+        state.modules.forEach(m => {
+            const nameDisplay = m.count > 1 ? `${m.name} x${m.count}` : m.name;
+            const totalCost = m.cost * m.count;
+            modsHTML += `<li class="mod-item"><span>${nameDisplay}</span><span>${totalCost} Slots</span></li>`;
+        });
+    }
+     
+    let usedSlots = 0;
+    state.modules.forEach(m => usedSlots += (m.cost * m.count));
+    const slotColor = usedSlots > state.slotsMax ? '#ff4d4f' : '#d6e4ff';
+
+    // Lógica de Exibição da Barra de EA
+    // Se EA > 0, mostra o item e a barra. Se 0, esconde o item.
+    const eaDisplay = state.eaMax > 0 ? 'flex' : 'none';
+
+    const html = `
+    <div class="puppet-card">
+      <div class="puppet-header">
+        <div class="puppet-model">${state.model}</div>
+        <div class="puppet-class">${state.grade}</div>
+      </div>
+      <div class="puppet-img"><img src="${state.img}"></div>
+       
+      <div class="puppet-data">
+        <div class="data-row"><span class="data-label">CHASSI:</span><span class="data-val">${state.size}</span></div>
+        <div class="data-row"><span class="data-label">SLOTS:</span><span class="data-val" style="color:${slotColor}">${usedSlots} / ${state.slotsMax}</span></div>
+        <div class="data-row"><span class="data-label">STATUS:</span><span class="data-val" style="color:#52c41a">OPERANTE</span></div>
+      </div>
+
+      <div class="puppet-status">
+        <div class="status-text">
+           <span>INTEGRIDADE (HP)</span>
+           <span>${state.hpMax} / ${state.hpMax}</span>
+        </div>
+        <div class="status-bar-container">
+           <div class="status-bar-fill" style="width: 100%"></div>
+        </div>
+      </div>
+
+      <div class="puppet-status" style="display:${eaDisplay}; padding-top:0;">
+        <div class="status-text">
+           <span style="color:var(--puppet-accent)">BATERIA (EA)</span>
+           <span>${state.eaMax} / ${state.eaMax}</span>
+        </div>
+        <div class="status-bar-container" style="border-color:var(--puppet-accent);">
+           <div class="status-bar-fill" style="width: 100%; background:var(--puppet-accent); box-shadow:0 0 10px var(--puppet-accent);"></div>
+        </div>
+      </div>
+
+      <div class="puppet-modules">
+        <div class="mod-title">SISTEMAS INSTALADOS</div>
+        <ul class="mod-list">${modsHTML}</ul>
+      </div>
+
+      <div class="puppet-footer">JUWAKUSAU PROTOCOL // SYSTEM ID: ${Math.floor(Math.random()*9999)}</div>
+    </div>`;
+
+    document.getElementById('preview-box').innerHTML = html;
+     
+    const exportCode = `<link href="https://gaaaaaaaaabs.github.io/goldenagerepositor.io/ficha-marionete.css" rel="stylesheet" type="text/css">${html}`;
+    document.getElementById('output-code').value = exportCode.replace(/(\r\n|\n|\r)/gm, "").replace(/>\s+</g, '><');
+  }
+
+  function copyCode() {
+    document.getElementById('output-code').select();
+    document.execCommand('copy');
+    alert("Copiado!");
+  }
+
+  // Init
+  document.getElementById('inp-model').value = state.model;
+  recalcStats(); // Calcula HP/Slots iniciais e renderiza
+</script>
+</body>
+</html>
