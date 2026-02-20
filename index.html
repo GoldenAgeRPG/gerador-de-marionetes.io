@@ -117,7 +117,15 @@
              <optgroup label="AUXILIAR">
                  <option value="Sensores Ópticos|1">Sensores Ópticos (1 Slot)</option>
                  <option value="Bateria|2">Bateria (2 Slots / +1.000 EA)</option>
+                 <option value="Módulo de Comunicação|1">Módulo de Comunicação (1 Slot)</option>
+                 <option value="Ejetor de Fumaça|1">Ejetor de Fumaça (1 Slot)</option>
+                 <option value="Ganchos de Escalada|1">Ganchos de Escalada (1 Slot)</option>
              </optgroup>
+             <optgroup label="SUPORTE">
+                <option value="Injetor de Reversão|3">Injetor de Reversão (3 Slots / RCT)</option>
+                <option value="Âncora de Energia|2">Âncora de Energia (2 Slots)</option>
+                <option value="Analisador Bioelétrico|2">Analisador Bioelétrico (2 Slots)</option>
+            </optgroup>
          </select>
          <button class="btn" style="width:auto; margin-top:0;" onclick="addMod()">+</button>
       </div>
@@ -261,7 +269,7 @@
 
   function renderPreview() {
     let modsHTML = '';
-     
+    
     if(state.modules.length === 0) {
         modsHTML = `<li class="mod-item" style="font-style:italic; color:#555;">Nenhum módulo instalado.</li>`;
     } else {
@@ -277,7 +285,6 @@
     const slotColor = usedSlots > state.slotsMax ? '#ff4d4f' : '#d6e4ff';
 
     // Lógica de Exibição da Barra de EA
-    // Se EA > 0, mostra o item e a barra. Se 0, esconde o item.
     const eaDisplay = state.eaMax > 0 ? 'flex' : 'none';
 
     const html = `
@@ -336,7 +343,7 @@
 
   // Init
   document.getElementById('inp-model').value = state.model;
-  recalcStats(); // Calcula HP/Slots iniciais e renderiza
+  recalcStats(); 
 </script>
 </body>
 </html>
