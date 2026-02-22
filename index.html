@@ -8,7 +8,7 @@
    
   <style>
     /* --- UI GERENCIADOR (BLUEPRINT DARK) --- */
-    :root { --bg: #0b1021; --panel: #131b2e; --text: #d6e4ff; --accent: #40a9ff; --warn: #ffd700; --danger: #ff4d4f; }
+    :root { --bg: #0b1021; --panel: #131b2e; --text: #d6e4ff; --accent: #8b5cf6; --warn: #ffd700; --danger: #ff4d4f; }
     body { font-family: 'Share Tech Mono', monospace; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: grid; grid-template-columns: 400px 1fr; overflow: hidden; }
      
     .editor { background: var(--panel); border-right: 2px solid var(--accent); padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; box-shadow: 5px 0 20px #000; z-index: 10; }
@@ -23,14 +23,14 @@
     .mod-list-edit { display: flex; flex-direction: column; gap: 5px; border: 1px solid #333; padding: 10px; background: #080a12; flex: 1; min-height: 150px; overflow-y: auto; }
     .mod-item-edit { 
         display: flex; justify-content: space-between; align-items: center; 
-        background: rgba(64, 169, 255, 0.1); padding: 5px 10px; border-left: 3px solid var(--accent);
+        background: rgba(139, 92, 246, 0.1); padding: 5px 10px; border-left: 3px solid var(--accent);
     }
     .mod-name { font-size: 0.9em; color: #fff; }
     .mod-cost { font-size: 0.8em; color: var(--warn); margin-right: 10px; }
     .btn-del { background: transparent; color: var(--danger); border: 1px solid var(--danger); cursor: pointer; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
     .btn-del:hover { background: var(--danger); color: #fff; }
      
-    .btn { width: 100%; padding: 10px; background: var(--accent); color: #000; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase; margin-top: 5px; }
+    .btn { width: 100%; padding: 10px; background: var(--accent); color: #fff; font-weight: bold; border: none; cursor: pointer; text-transform: uppercase; margin-top: 5px; }
     .btn:hover { filter: brightness(1.2); }
      
     .slot-counter { font-weight: bold; transition: 0.3s; }
@@ -40,12 +40,6 @@
     .preview { background: #050810; display: flex; flex-direction: column; align-items: center; padding: 40px; overflow-y: auto; }
     #preview-box { width: 100%; max-width: 600px; }
     #output-code { height: 80px; width: 100%; max-width: 600px; margin-top: 20px; opacity: 0; }
-
-    /* CSS Injetado */
-    @import url('https://gaaaaaaaaabs.github.io/goldenagerepositor.io/ficha-marionete.css');
-     
-    /* Classe auxiliar para esconder EA */
-    .hidden { display: none !important; }
   </style>
   <link href="https://gaaaaaaaaabs.github.io/goldenagerepositor.io/ficha-marionete.css" rel="stylesheet" type="text/css">
 </head>
@@ -61,7 +55,7 @@
      
     <div class="row">
       <div style="flex:1">
-        <label>Grau (Base HP / Slots)</label>
+        <label>Grau (HP / Slots)</label>
         <select id="inp-grade" onchange="recalcStats()">
             <option value="GRAU 4" data-base="2" data-hp="500">Grau 4 (500 HP)</option>
             <option value="GRAU 3" data-base="4" data-hp="1500" selected>Grau 3 (1.500 HP)</option>
@@ -100,9 +94,11 @@
          <select id="module-select">
              <optgroup label="OFENSIVO">
                  <option value="Lâminas Integradas|1">Lâminas Integradas (1 Slot)</option>
-                 <option value="Artilharia|2">Artilharia (2 Slots)</option>
-                 <option value="Injetor Químico|1">Injetor Químico (1 Slot)</option>
+                 <option value="Artilharia|1">Artilharia (1 Slot)</option>
+                 <option value="Mísseis de Energia|2">Mísseis de Energia (2 Slots)</option>
                  <option value="Canhão de Energia|3">Canhão de Energia (3 Slots)</option>
+                 <option value="Canhão Definitivo|5">Canhão Definitivo (5 Slots)</option>
+                 <option value="Injetor Químico|1">Injetor Químico (1 Slot)</option>
              </optgroup>
              <optgroup label="DEFENSIVO">
                  <option value="Blindagem em Camadas|2">Blindagem em Camadas (2 Slots)</option>
@@ -120,9 +116,11 @@
                  <option value="Módulo de Comunicação|1">Módulo de Comunicação (1 Slot)</option>
                  <option value="Ejetor de Fumaça|1">Ejetor de Fumaça (1 Slot)</option>
                  <option value="Ganchos de Escalada|1">Ganchos de Escalada (1 Slot)</option>
+                 <option value="Tubos de Domínio|3">Tubos de Domínio (3 Slots)</option>
              </optgroup>
              <optgroup label="SUPORTE">
                 <option value="Injetor de Reversão|3">Injetor de Reversão (3 Slots / RCT)</option>
+                <option value="Injetor de Energia|2">Injetor de Energia (2 Slots)</option>
                 <option value="Âncora de Energia|2">Âncora de Energia (2 Slots)</option>
                 <option value="Analisador Bioelétrico|2">Analisador Bioelétrico (2 Slots)</option>
             </optgroup>
@@ -162,7 +160,6 @@
   };
 
   function recalcStats() {
-    // 1. SLOTS & GRAU
     const gradeSel = document.getElementById('inp-grade');
     const baseSlots = parseInt(gradeSel.options[gradeSel.selectedIndex].getAttribute('data-base'));
     const baseHpGrade = parseInt(gradeSel.options[gradeSel.selectedIndex].getAttribute('data-hp'));
@@ -171,7 +168,6 @@
     const modSlots = parseInt(sizeSel.options[sizeSel.selectedIndex].getAttribute('data-mod'));
     const modHp = parseFloat(sizeSel.options[sizeSel.selectedIndex].getAttribute('data-hp-mod'));
      
-    // 2. Calcula Slots
     let totalSlots = baseSlots + modSlots;
     if (totalSlots < 1) totalSlots = 1;
      
@@ -179,8 +175,6 @@
     state.size = sizeSel.value;
     state.slotsMax = totalSlots;
      
-    // 3. Calcula HP (Base * Modificador + Bônus de Módulos)
-    // Verifica quantos Reforços Estruturais tem
     let structureBonus = 0;
     let batteryCount = 0;
      
@@ -189,13 +183,9 @@
         if(m.name === "Bateria") batteryCount += m.count;
     });
 
-    // HP Final
-    state.hpMax = (baseHpGrade * modHp) + structureBonus;
-     
-    // EA Final (MODIFICADO PARA 1000)
+    state.hpMax = Math.floor((baseHpGrade * modHp) + structureBonus);
     state.eaMax = batteryCount * 1000;
      
-    // Atualiza UI
     document.getElementById('calc-slots').innerText = state.slotsMax;
     document.getElementById('calc-hp').innerText = state.hpMax;
     document.getElementById('calc-ea').innerText = state.eaMax;
@@ -204,8 +194,8 @@
   }
 
   function upd() {
-    state.model = document.getElementById('inp-model').value;
-    state.img = document.getElementById('inp-img').value;
+    state.model = document.getElementById('inp-model').value || "UNNAMED UNIT";
+    state.img = document.getElementById('inp-img').value || "https://placehold.jp/24/131b2e/accent/400x300.png?text=NO+IMAGE";
      
     renderModList();
     renderPreview();
@@ -223,7 +213,7 @@
     } else {
         state.modules.push({ name, cost, count: 1 });
     }
-    recalcStats(); // Recalcula HP/EA se necessário
+    recalcStats();
   }
 
   function removeMod(index) {
@@ -284,7 +274,6 @@
     state.modules.forEach(m => usedSlots += (m.cost * m.count));
     const slotColor = usedSlots > state.slotsMax ? '#ff4d4f' : '#d6e4ff';
 
-    // Lógica de Exibição da Barra de EA
     const eaDisplay = state.eaMax > 0 ? 'flex' : 'none';
 
     const html = `
@@ -338,10 +327,9 @@
   function copyCode() {
     document.getElementById('output-code').select();
     document.execCommand('copy');
-    alert("Copiado!");
+    alert("CÓDIGO DE FICHA COPIADO!");
   }
 
-  // Init
   document.getElementById('inp-model').value = state.model;
   recalcStats(); 
 </script>
